@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+</head>
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+<script src="bower_components/highcharts-ng/dist/highcharts-ng.min.js"></script>
+<body>
+
+<div ng-app="myApp" ng-controller="myCtrl">
+
+    <!--<ul>-->
+    <!--<li ng-repeat="x in names">-->
+    <!--{{ x.Name + ', ' + x.Country }}-->
+    <!--</li>-->
+    <!--</ul>-->
+    <p ng-model="test">{{test}}</p>
+
+    <input ng-model="highchartsNG.title.text">
+    <button ng-click="addSeries()">Add Series</button>
+    <button ng-click="addPoints()">Add Points to Random Series</button>
+    <button ng-click="removeRandomSeries()">Remove Random Series</button>
+    <button ng-click="swapChartType()">Line/Bar</button>
+    <highchart id="chart1" config="highchartsNG"></highchart>
+    <!--<p ng-model="test">{{test}}</p>-->
+
+    <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
+                aria-haspopup="true" aria-expanded="true">
+            Dropdown
+            <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li><a href="#">Separated link</a></li>
+        </ul>
+    </div>
+    <ul>
+
+        <li ng-repeat="clientObject in clientObjects">
+
+
+            <p>EP: {{clientObject.client_bs_obj.device_id}}</p>
+            <ul>
+                <li ng-repeat="obj in clientObject.objectMap">
+                    <p>OBJ: {{obj.object_id}}</p>
+                    <ul>
+                        <li ng-repeat="objIns in obj.objInstanceMap">
+                            <p> ins: {{objIns.objInstance_id}}</p>
+                            Create value: <input type="text" ng-model="createValue"/><br>
+                            <button class="btn btn-info"
+                                    ng-click="create(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, createValue)">
+                                CREATE INSTANCE
+                            </button>
+                            <br>
+                            <button class="btn btn-info glyphicon  "
+                                    ng-click="delete(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id)">
+                                DELETE
+                            </button>
+                            <br>
+                            <ul>
+                                <li ng-repeat="res in objIns.resourceMap">
+                                    <p> res: {{res.recourse_id}}</p>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <button class="btn btn-info glyphicon glyphicon-eye-open "
+                                                    ng-click="read(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, res.recourse_id)">
+                                                READ
+                                            </button>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button class="btn btn-info "
+                                                    ng-click="observe(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, res.recourse_id)">
+                                                OBSERVE
+                                            </button>
+                                            <br>
+                                        </div>
+
+                                        <button class="btn btn-info "
+                                                ng-click="cancelObserve(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, res.recourse_id)">
+                                            CANCEL OBSERVE
+                                        </button>
+                                        <br>
+
+                                        Write Message: <input type="text" ng-model="writeValue"/><br>
+                                        <button class="btn btn-info"
+                                                ng-click="write(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, res.recourse_id, writeValue)">
+                                            WRITE
+                                        </button>
+                                        <br>
+
+                                        <button class="btn btn-info"
+                                                ng-click="discover(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, res.recourse_id)">
+                                            DISCOVER
+                                        </button>
+                                        <br>
+                                        Minimum Period: <input type="text" ng-model="pmin"/>
+                                        Maximum Period: <input type="text" ng-model="pmax"/>
+                                        Greater Than: <input type="text" ng-model="gt"/>
+                                        Less Than: <input type="text" ng-model="lt"/>
+                                        Step : <input type="text" ng-model="st"/>
+                                        <button class="btn btn-info"
+                                                ng-click="writeAttribute(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, res.recourse_id,pmin,pmax,gt,lt,st)">
+                                            WRITEATTRIBUTE
+                                        </button>
+                                        <br>
+                                        Execution name: <input type="text" ng-model="executionName"/><br>
+                                        <button class="btn btn-info"
+                                                ng-click="execute(clientObject.client_bs_obj.device_id, obj.object_id, objIns.objInstance_id, res.recourse_id, executionName)">
+                                            EXECUTE
+                                        </button>
+                                        <br>
+
+                                    </div>
+
+
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                </li>
+
+            </ul>
+
+        </li>
+    </ul>
+
+</div>
+
+<script>
+    //    function test(){
+    var app = angular.module('myApp', ["highcharts-ng"]);
+    app.controller('myCtrl', function ($scope, $http) {
+        $http.get("http://localhost:8080/WearableProject_war_exploded/api/server/clientObjects")
+                .success(function (response) {
+                    console.log(response)
+                    $scope.clientObjects = response;
+
+
+                }
+        );
+        $scope.observe = function (ep, objID, InsID, resID) {
+            $http.get("http://localhost:8080/WearableProject_war_exploded/api/server/observe/" + objID + "/" + InsID + "/" + resID + "?" + "ep=" + ep)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+        $scope.cancelObserve = function (ep, objID, InsID, resID) {
+            $http.get("http://localhost:8080/WearableProject_war_exploded/api/server/cancelObserve/" + objID + "/" + InsID + "/" + resID + "?" + "ep=" + ep)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+
+
+        $scope.read = function (ep, objID, InsID, resID) {
+            $http.get("http://localhost:8080/WearableProject_war_exploded/api/server/read/" + objID + "/" + InsID + "/" + resID + "?" + "ep=" + ep)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+
+        $scope.write = function (ep, objID, InsID, resID, value) {
+            var req = {
+                method: 'POST',
+                url: "http://localhost:8080/WearableProject_war_exploded/api/server/write/" + objID + "/" + InsID + "/" + resID + "?" + "ep=" + ep,
+                headers: {
+                    'Content-Type': "text/plain"
+                },
+                data: value
+            }
+            $http(req)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+
+        $scope.create = function (ep, objID, InsID, value) {
+            var req = {
+                method: 'POST',
+                url: "http://localhost:8080/WearableProject_war_exploded/api/server/create/" + objID + "/" + InsID + "?" + "ep=" + ep,
+                headers: {
+                    'Content-Type': "text/plain"
+                },
+                data: value
+            }
+            $http(req)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+
+        $scope.discover = function (ep, objID, InsID, resID) {
+            $http.get("http://localhost:8080/WearableProject_war_exploded/api/server/discover/" + objID + "/" + InsID + "/" + resID + "?" + "ep=" + ep)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+
+        $scope.writeAttribute = function (ep, objID, InsID, resID, pmin, pmax, gt, lt, st) {
+            var req = {
+                method: 'PUT',
+                url: "http://localhost:8080/WearableProject_war_exploded/api/server/writeAttribute/" + objID + "/" + InsID + "/" + resID + "?ep=" + ep
+                + "&pmin=" + pmin + "&pmax=" + pmax + "&gt=" + gt + "&lt=" + lt + "&st=" + st,
+                headers: {
+                    'Content-Type': "text/plain"
+                }
+            }
+            $http(req)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+        $scope.execute = function (ep, objID, InsID, resID, value) {
+            var req = {
+                method: 'POST',
+                url: "http://localhost:8080/WearableProject_war_exploded/api/server/execute/" + objID + "/" + InsID + "/" + resID + "?" + "ep=" + ep,
+                headers: {
+                    'Content-Type': "text/plain"
+                },
+                data: value
+            }
+            $http(req)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+        $scope.delete = function (ep, objID, InsID) {
+            $http.delete("http://localhost:8080/WearableProject_war_exploded/api/server/delete/" + objID + "/" + InsID + "?" + "ep=" + ep)
+                    .success(function (response) {
+                        console.log(response)
+                        $scope.test = response;
+
+                    });
+
+        };
+
+        $scope.sseSource = new EventSource("http://localhost:8080/WearableProject_war_exploded/api/server/broadcast");
+        console.log($scope.sseSource);
+        $scope.sseSource.onerror = function (event) {
+            console.log("onerror");
+        }
+        $scope.sseSource.onopen = function (event) {
+            console.log("onopen");
+        }
+        $scope.sseSource.onmessage = function (event) {
+            console.log("onmessage");
+            alert(event.data);
+        }
+        $scope.addPoints = function () {
+            var seriesArray = $scope.highchartsNG.series
+            var rndIdx = Math.floor(Math.random() * seriesArray.length);
+            seriesArray[rndIdx].data = seriesArray[rndIdx].data.concat([1, 10, 20])
+        };
+
+        $scope.addSeries = function () {
+            var rnd = []
+            for (var i = 0; i < 10; i++) {
+                rnd.push(Math.floor(Math.random() * 20) + 1)
+            }
+            $scope.highchartsNG.series.push({
+                data: rnd
+            })
+        }
+
+        $scope.removeRandomSeries = function () {
+            var seriesArray = $scope.highchartsNG.series
+            var rndIdx = Math.floor(Math.random() * seriesArray.length);
+            seriesArray.splice(rndIdx, 1)
+        }
+
+        $scope.options = {
+            type: 'line'
+        }
+
+        $scope.swapChartType = function () {
+            if (this.highchartsNG.options.chart.type === 'line') {
+                this.highchartsNG.options.chart.type = 'bar'
+            } else {
+                this.highchartsNG.options.chart.type = 'line'
+            }
+        }
+
+        $scope.highchartsNG = {
+            options: {
+                chart: {
+                    type: 'bar'
+                }
+            },
+            series: [{
+                data: [10, 15, 12, 8, 7]
+            }],
+            title: {
+                text: 'Hello'
+            },
+            loading: false
+        }
+
+        var obj = test;
+        var charData = $.map(test , function(obj,i){
+
+            return [[]]
+        })
+
+
+    });
+
+
+
+</script>
+
+</body>
+</html>

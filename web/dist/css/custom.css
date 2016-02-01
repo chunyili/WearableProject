@@ -1,0 +1,14 @@
+.lwm2mButton{
+    margin-top:10px;
+}
+
+.lwm2mRow{
+    margin-top:10px;
+}
+ul{
+    list-style-type: none;
+    /*padding: 0px;*/
+}
+.panel-body {
+    padding-left: 0px !important;
+}
